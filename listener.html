@@ -1,12 +1,44 @@
 <body>
-  <video autoplay width="640" height="480"></video>
   <img src="" width="640" height="480" >
-  <canvas style="display:none;" width="640" height="480"></canvas>
   <div id="wrapper">
-    <button id="capture">capture</button>
-    <button id="stop">stop</button>
+    <button id="start">start listening</button>
+    <button id="stop">stop listening</button>
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-  <script src="static/distributor.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.3.0/lodash.js"></script>
+
+  <script>
+    $(function() {
+      // id for distribution!!!
+      var id = 100
+
+      var video = document.querySelector('img');
+
+      var socket = io();
+
+      var depictVideo = function(data) {
+        video.src = data.image;
+      }
+
+      var startListening = function() {
+        socket.emit('start listening', id);
+        socket.on('stream', depictVideo);
+      }
+
+      var stopListening = function() {
+        socket.emit('stop listening', id);
+        socket.removeListener('stream', depictVideo);
+      }
+
+      //ボタンイベント
+      $("#start").click(function() {
+        startListening();
+      });
+      $("#stop").click(function() {
+        stopListening();
+      });
+    })
+  </script>
 </body>
+

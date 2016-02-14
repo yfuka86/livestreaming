@@ -5,11 +5,11 @@ import io from 'socket.io'
 const app = express()
 
 app.get('/distributor', (req, res) => {
-  res.sendfile('distributor.html')
+  res.sendFile('distributor.html')
 })
 
 app.get('/listener', (req, res) => {
-  res.sendfile('listener.html')
+  res.sendFile('listener.html')
 })
 
 const port = process.env.PORT || 3000

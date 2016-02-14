@@ -30,7 +30,7 @@
       var sendToSocket = function() {
         if (videoStream) {
           ctx.drawImage(video, 0, 0);
-          socket.to(id).emit('stream', {image: canvas.toDataURL('image/webp')});
+          socket.emit('stream', {image: canvas.toDataURL('image/webp')});
         }
       }
 
@@ -66,7 +66,6 @@
         });
       }
 
-      //ボタンイベント
       $("#start").click(function() {
         startDistribution();
       });
