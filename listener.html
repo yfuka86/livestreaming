@@ -1,5 +1,6 @@
 <body>
-  <img src="" width="640" height="480" >
+  <img src="" width="640" height="480" class="live-streaming" >
+  <div class='message'></div>
   <div id="wrapper">
     <button id="start">start listening</button>
     <button id="stop">stop listening</button>
@@ -10,25 +11,52 @@
 
   <script>
     $(function() {
-      // id for distribution!!!
+      // id of distribution!!!
       var id = 100
 
-      var video = document.querySelector('img');
-
+      var $video = $('.live-streaming');
       var socket = io();
 
+      var latestDepict = null
+      var distributionCheckId = null
+
       var depictVideo = function(data) {
-        video.src = data.image;
+        $video.attr('src', data.image);
+        latestDepict = new Date();
+      }
+
+      var startCheck = function () {
+        latestDepict = new Date();
+        distributionCheckId = setInterval(checkIsVideoBeingDistributed, 500);
+      }
+
+      var endCheck = function () {
+        clearInterval(distributionCheckId);
+        latestDepict = null;
+        $('.message').empty();
+      }
+
+      var checkIsVideoBeingDistributed = function() {
+        if (latestDepict) {
+          if (new Date() - latestDepict > 1000) {
+            $('.message').text('現在配信されていません');
+          } else {
+            $('.message').empty()
+          }
+        }
       }
 
       var startListening = function() {
         socket.emit('start listening', id);
         socket.on('stream', depictVideo);
+        startCheck();
       }
 
       var stopListening = function() {
         socket.emit('stop listening', id);
         socket.removeListener('stream', depictVideo);
+        $video.attr('src', '');
+        endCheck();
       }
 
       //ボタンイベント
