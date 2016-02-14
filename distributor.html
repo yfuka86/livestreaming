@@ -1,0 +1,81 @@
+<body>
+  <video autoplay width="640" height="480"></video>
+  <canvas style="display:none;" width="640" height="480"></canvas>
+  <div id="wrapper">
+    <button id="start">start streaming</button>
+    <button id="stop">stop streaming</button>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.3.0/lodash.js"></script>
+  <script>
+    $(function() {
+      // id for this user!!!
+      var id = 100
+
+      var frameRate = 12;
+      var video = document.querySelector('video');
+      var canvas = document.querySelector('canvas');
+      var ctx = canvas.getContext('2d');
+      var videoStream = null;
+
+      var socket = io();
+      var socketStreamId = null;
+
+      var hasGetUserMedia = function() {
+        return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
+          navigator.mozGetUserMedia || navigator.msGetUserMedia);
+      }
+
+      var sendToSocket = function() {
+        if (videoStream) {
+          ctx.drawImage(video, 0, 0);
+          socket.to(id).emit('stream', {image: canvas.toDataURL('image/webp')});
+        }
+      }
+
+      var startStreaming = function() {
+        video.src = window.URL.createObjectURL(videoStream);
+
+        socket.emit('start distribution', id);
+        socketStreamId = setInterval(sendToSocket, 1000 / frameRate);
+      }
+
+      var stopStreaming = function() {
+        clearInterval(socketStreamId);
+        socket.emit('stop distribution', id);
+
+        _.isFunction(videoStream.stop) ? videoStream.stop() : videoStream = null;
+        video.src = '#'
+      }
+
+      var startDistribution = function() {
+        if (!hasGetUserMedia()) {
+          alert("未対応ブラウザです。");
+        }
+
+        window.URL = window.URL || window.webkitURL;
+        navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia ||
+                      navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+        navigator.getUserMedia({video: true}, function(stream) {
+          videoStream = stream;
+          startStreaming();
+        }, function(e) {
+          console.log('エラー!', e);
+        });
+      }
+
+      //ボタンイベント
+      $("#start").click(function() {
+        startDistribution();
+      });
+      $("#stop").click(function() {
+        stopStreaming();
+      });
+      $("video").click(function() {
+        snapshot();
+      });
+    })
+  </script>
+</body>
