@@ -39,7 +39,7 @@
 
           reader.onload = function() {
             var blobUrl = reader.result;
-            socket.emit('stream', {ts: started, audio: blobUrl});
+            socket.emit('stream', {ts: startedAt, audio: blobUrl});
           };
 
           reader.readAsDataURL(audioBlob);
