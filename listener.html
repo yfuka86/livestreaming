@@ -16,7 +16,7 @@
       // id of distribution!!!
       var id = 100
 
-      var frameRate = 12;
+      var frameRate = 10;
       var $video = $('.video');
       var $audio = $('.audio');
       var $audio2 = $('.audio2');
@@ -32,26 +32,29 @@
       var renderVideo = function(data) {
         // audio will always arrive later than video(image)
         if (data.video) {
-          videoQueue.push(data);
+          // videoQueue.push(data);
+          $video.attr('src', data.video);
+          console.log('size' + data.video.length);
+          console.log(new Number(new Date()) - data.ts);
         }
-        if (data.audio) {
-          if (latestAudioNode = $audio2) {
-            $audio.attr('src', data.audio);
-            latestAudioNode = $audio;
-          } else {
-            $audio2.attr('src', data.audio);
-            latestAudioNode = $audio2;
-          }
+        // if (data.audio) {
+        //   if (latestAudioNode = $audio2) {
+        //     $audio.attr('src', data.audio);
+        //     latestAudioNode = $audio;
+        //   } else {
+        //     $audio2.attr('src', data.audio);
+        //     latestAudioNode = $audio2;
+        //   }
 
-          if (videoIntervalId) clearInterval(videoIntervalId);
-          videoIntervalId = setInterval(function() {
-            var shifted = videoQueue.shift();
-            $video.attr('src', shifted.video);
-            if (shifted.ts > (data.ts + 2000)) {
-              clearInterval(intervalId);
-            }
-          }, 1000 / frameRate);
-        }
+        //   if (videoIntervalId) clearInterval(videoIntervalId);
+        //   videoIntervalId = setInterval(function() {
+        //     var shifted = videoQueue.shift();
+        //     if (shifted === undefined || shifted.ts > (data.ts + 2000)) {
+        //       clearInterval(videoIntervalId);
+        //     }
+        //     $video.attr('src', shifted.video);
+        //   }, 1000 / frameRate);
+        // }
         latestDepict = new Date();
       }
 
