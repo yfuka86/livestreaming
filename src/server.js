@@ -1,15 +1,16 @@
 import express from 'express'
 import http from 'http'
+import path from 'path'
 import io from 'socket.io'
 
 const app = express()
 
 app.get('/distributor', (req, res) => {
-  res.sendFile('distributor.html')
+  res.sendFile('distributor.html', { root: path.join(__dirname, '../') })
 })
 
 app.get('/listener', (req, res) => {
-  res.sendFile('listener.html')
+  res.sendFile('listener.html', { root: path.join(__dirname, '../') })
 })
 
 const port = process.env.PORT || 3000
