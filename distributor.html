@@ -27,18 +27,29 @@
           navigator.mozGetUserMedia || navigator.msGetUserMedia);
       }
 
-      var sendToSocket = function() {
-        if (videoStream) {
-          ctx.drawImage(video, 0, 0);
-          socket.emit('stream', {image: canvas.toDataURL('image/webp')});
-        }
+      var sendToSocket = function(evt) {
+        var videoBlob = new Blob([evt.data], { type: evt.data.type });
+        blobUrl = window.URL.createObjectURL(videoBlob);
+        socket.emit('stream', {video: blobUrl});
+      }
+
+      var startRecord = function() {
+        var recorder = new MediaRecorder(videoStream);
+        recorder.ondataavailable = sendToSocket;
+
+        return socketStreamId = setInterval(() => {
+          recorder.start();
+          setTimeout(() => {
+            recorder.stop();
+          }, 1000);
+        }, 1000);
       }
 
       var startStreaming = function() {
         video.src = window.URL.createObjectURL(videoStream);
 
         socket.emit('start distribution', id);
-        socketStreamId = setInterval(sendToSocket, 1000 / frameRate);
+        socketStreamId = startRecord();
       }
 
       var stopStreaming = function() {
@@ -55,10 +66,10 @@
         }
 
         window.URL = window.URL || window.webkitURL;
-        navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia ||
-                      navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
+          navigator.mozGetUserMedia || navigator.msGetUserMedia;
 
-        navigator.getUserMedia({video: true}, function(stream) {
+        navigator.getUserMedia({audio: true, video: true}, function(stream) {
           videoStream = stream;
           startStreaming();
         }, function(e) {

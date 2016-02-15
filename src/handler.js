@@ -5,11 +5,11 @@ import redis from 'redis'
 const REDIS_HOST = process.env.REDIS_HOST || '127.0.0.1'
 const REDIS_PORT = process.env.REDIS_PORT || 6379
 const REDIS_PASS = process.env.REDIS_PASS || ''
-const redisClient = redis.createClient(REDIS_PORT, REDIS_HOST, { auth_pass: REDS_PASS })
+const redisClient = redis.createClient(REDIS_PORT, REDIS_HOST, { auth_pass: REDIS_PASS })
 
 redisClient.subscribe('create_msg')
-redisClient.on('message', (channel, raw_params) => {
-  const params = JSON.parse(raw_params)
+redisClient.on('message', (channel, rawParams) => {
+  const params = JSON.parse(rawParams)
   io.to(params.id).emit("create_mes", params)
 })
 

@@ -1,5 +1,5 @@
 <body>
-  <img src="" width="640" height="480" class="live-streaming" >
+  <video src="" width="640" height="480" class="live-streaming" >
   <div class='message'></div>
   <div id="wrapper">
     <button id="start">start listening</button>
@@ -21,7 +21,7 @@
       var distributionCheckId = null
 
       var depictVideo = function(data) {
-        $video.attr('src', data.image);
+        $video.attr('src', data.video);
         latestDepict = new Date();
       }
 
