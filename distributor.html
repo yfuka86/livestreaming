@@ -1,11 +1,11 @@
 <body>
   <video autoplay width="640" height="480"></video>
-  <canvas style="display:none;" width="640" height="480"></canvas>
+  <canvas style="display:none;" width="320" height="240"></canvas>
   <div id="wrapper">
     <button id="start">start streaming</button>
     <button id="stop">stop streaming</button>
   </div>
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.3.0/lodash.js"></script>
   <script>
@@ -13,7 +13,7 @@
       // id of this user!!!
       var id = 100
 
-      var frameRate = 12;
+      var frameRate = 10;
       var video = document.querySelector('video');
       video.volume = 0;
       var canvas = document.querySelector('canvas');
@@ -23,6 +23,7 @@
       var socket = io();
       var videoStreamId = null;
       var audioStreamId = null;
+      var d = null;
 
       var hasGetUserMedia = function() {
         return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
@@ -31,7 +32,7 @@
 
       var sendAudioToSocket = function(evt) {
         if (!videoStream) return false;
-        var audioBlob = new Blob([evt.data], { type: 'audio/ogg; codecs=opus' });
+        var audioBlob = new Blob([evt.data], {type: 'audio/ogg'});
         var reader = new FileReader;
 
         reader.onload = function() {
@@ -50,13 +51,16 @@
 
       var startAudioStreaming = function() {
         return audioStreamId = setInterval(() => {
-          var recorder = new MediaRecorder(videoStream);
+          var recorder = new MediaRecorder(videoStream, {
+            audioBitsPerSecond : 1280,
+            mimeType : 'audio/ogg'
+          });
           recorder.ondataavailable = sendAudioToSocket;
           recorder.start();
           setTimeout(() => {
             recorder.stop();
-          }, 1000);
-        }, 1000);
+          }, 2000);
+        }, 2000);
       }
 
       var startVideoStreaming = function() {
@@ -93,7 +97,7 @@
         navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
           navigator.mozGetUserMedia || navigator.msGetUserMedia;
 
-        navigator.getUserMedia({video: true, audio: true}, function(stream) {
+        navigator.getUserMedia({video: { frameRate: frameRate, width: 320, height: 240 }, audio: true}, function(stream) {
           videoStream = stream;
           startStreaming();
         }, function(e) {
