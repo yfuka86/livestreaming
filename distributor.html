@@ -15,29 +15,43 @@
 
       var frameRate = 12;
       var video = document.querySelector('video');
+      video.volume = 0;
       var canvas = document.querySelector('canvas');
       var ctx = canvas.getContext('2d');
       var videoStream = null;
 
       var socket = io();
-      var socketStreamId = null;
+      var videoStreamId = null;
+      var audioStreamId = null;
 
       var hasGetUserMedia = function() {
         return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
           navigator.mozGetUserMedia || navigator.msGetUserMedia);
       }
 
-      var sendToSocket = function(evt) {
-        var videoBlob = new Blob([evt.data], { type: evt.data.type });
-        blobUrl = window.URL.createObjectURL(videoBlob);
-        socket.emit('stream', {video: blobUrl});
+      var sendAudioToSocket = function(evt) {
+        if (!videoStream) return false;
+        var audioBlob = new Blob([evt.data], { type: 'audio/ogg; codecs=opus' });
+        var reader = new FileReader;
+
+        reader.onload = function() {
+          var blobUrl = reader.result;
+          socket.emit('stream', {audio: blobUrl});
+        };
+
+        reader.readAsDataURL(audioBlob);
       }
 
-      var startRecord = function() {
-        var recorder = new MediaRecorder(videoStream);
-        recorder.ondataavailable = sendToSocket;
+      var sendVideoToSocket = function() {
+        if (!videoStream) return false;
+        ctx.drawImage(video, 0, 0);
+        socket.emit('stream', {video: canvas.toDataURL('image/webp')});
+      }
 
-        return socketStreamId = setInterval(() => {
+      var startAudioStreaming = function() {
+        return audioStreamId = setInterval(() => {
+          var recorder = new MediaRecorder(videoStream);
+          recorder.ondataavailable = sendAudioToSocket;
           recorder.start();
           setTimeout(() => {
             recorder.stop();
@@ -45,15 +59,23 @@
         }, 1000);
       }
 
+      var startVideoStreaming = function() {
+        return setInterval(() => {
+          sendVideoToSocket();
+        }, 1000 / frameRate);
+      }
+
       var startStreaming = function() {
         video.src = window.URL.createObjectURL(videoStream);
 
         socket.emit('start distribution', id);
-        socketStreamId = startRecord();
+        videoStreamId = startVideoStreaming();
+        audioStreamId = startAudioStreaming();
       }
 
       var stopStreaming = function() {
-        clearInterval(socketStreamId);
+        clearInterval(videoStreamId);
+        clearInterval(audioStreamId);
         socket.emit('stop distribution', id);
 
         _.isFunction(videoStream.stop) ? videoStream.stop() : videoStream = null;
@@ -61,15 +83,17 @@
       }
 
       var startDistribution = function() {
-        if (!hasGetUserMedia()) {
+        if (!hasGetUserMedia() || typeof(MediaRecorder) === 'undefined') {
           alert("未対応ブラウザです。");
+          return false;
         }
+        if (videoStream) return false;
 
         window.URL = window.URL || window.webkitURL;
         navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
           navigator.mozGetUserMedia || navigator.msGetUserMedia;
 
-        navigator.getUserMedia({audio: true, video: true}, function(stream) {
+        navigator.getUserMedia({video: true, audio: true}, function(stream) {
           videoStream = stream;
           startStreaming();
         }, function(e) {
