@@ -1,5 +1,18 @@
 import io from './server'
 import _ from 'lodash'
+import redis from 'redis'
+
+const REDIS_HOST = '127.0.0.1';
+const REDIS_PORT = 6379;
+const REDS_PASS = '';
+
+var redis_client = redis.createClient(REDIS_PORT, REDIS_HOST, { auth_pass: REDS_PASS });
+
+redis_client.subscribe('create_msg');
+redis_client.on('message', (channel, raw_params) => {
+  var params = JSON.parse(raw_params);
+  io.to(params.id).emit("create_mes", params);
+});
 
 export default function handler (socket) {
   console.log('a user connected');
