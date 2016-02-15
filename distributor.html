@@ -21,7 +21,7 @@
       var ctx = canvas.getContext('2d');
       var videoStream = null;
 
-      var socket = io('http://127.0.0.1:3000');
+      var socket = io('http://45.55.10.134/');
       var videoStreamId = null;
       var audioStreamId = null;
       var d = null;
@@ -39,7 +39,7 @@
 
           reader.onload = function() {
             var blobUrl = reader.result;
-            socket.emit('stream', {ts: startedAt, audio: blobUrl});
+            socket.emit('stream', {ts: started, audio: blobUrl});
           };
 
           reader.readAsDataURL(audioBlob);
