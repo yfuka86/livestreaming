@@ -1,6 +1,6 @@
 <body>
   <video autoplay width="640" height="480"></video>
-  <canvas style="display:none;" width="320" height="240"></canvas>
+  <canvas style="display:none;" id="snapshot" width="320" height="240"></canvas>
   <div id="wrapper">
     <button id="start">start streaming</button>
     <button id="stop">stop streaming</button>
@@ -8,20 +8,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.3.0/lodash.js"></script>
-  <script src="https://cdn.webrtc-experiment.com/MediaStreamRecorder.js"></script>
+  <script src="/static/recorder.js"></script>
   <script>
     $(function() {
       // id of this user!!!
       var id = 100
 
-      var frameRate = 10;
+      var frameRate = 12;
       var video = document.querySelector('video');
       video.volume = 0;
-      var canvas = document.querySelector('canvas');
+      var canvas = document.querySelector('#snapshot');
       var ctx = canvas.getContext('2d');
       var videoStream = null;
 
-      var socket = io();
+      var socket = io('http://127.0.0.1:3000');
       var videoStreamId = null;
       var audioStreamId = null;
       var d = null;
@@ -31,37 +31,59 @@
           navigator.mozGetUserMedia || navigator.msGetUserMedia);
       }
 
-      var sendAudioToSocket = function(evt) {
-        if (!videoStream) return false;
-        var audioBlob = new Blob([evt.data], {type: 'audio/ogg'});
-        var reader = new FileReader;
+      var sendAudioToSocket = function(recorder, startedAt) {
+        recorder.exportWAV(function(blob) {
+          if (!videoStream) return false;
+          var audioBlob = new Blob([blob], {type: 'audio/wav'});
+          var reader = new FileReader;
 
-        reader.onload = function() {
-          var blobUrl = reader.result;
-          socket.emit('stream', {audio: blobUrl});
-        };
+          reader.onload = function() {
+            var blobUrl = reader.result;
+            socket.emit('stream', {ts: startedAt, audio: blobUrl});
+          };
 
-        reader.readAsDataURL(audioBlob);
+          reader.readAsDataURL(audioBlob);
+        });
       }
 
       var sendVideoToSocket = function() {
         if (!videoStream) return false;
-        ctx.drawImage(video, 0, 0);
-        socket.emit('stream', {video: canvas.toDataURL('image/webp')});
+        ctx.drawImage(video, 0, 0, 320, 240);
+        socket.emit('stream', {ts: new Number(new Date()), video: canvas.toDataURL('image/webp')});
       }
 
       var startAudioStreaming = function() {
-        return audioStreamId = setInterval(() => {
-          var recorder = new MediaRecorder(videoStream, {
-            audioBitsPerSecond : 1280,
-            mimeType : 'audio/ogg'
-          });
-          recorder.ondataavailable = sendAudioToSocket;
-          recorder.start();
+        if (!videoStream) return false;
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        var audioContext = new AudioContext();
+        return setInterval(() => {
+          var audioInput = null,
+              realAudioInput = null,
+              inputPoint = null,
+              audioRecorder = null;
+
+          inputPoint = audioContext.createGain();
+
+          // Create an AudioNode from the stream.
+          realAudioInput = audioContext.createMediaStreamSource(videoStream);
+          audioInput = realAudioInput;
+          audioInput.connect(inputPoint);
+
+          var splitter = audioContext.createChannelSplitter(2);
+          var merger = audioContext.createChannelMerger(2);
+
+          analyserNode = audioContext.createAnalyser();
+          analyserNode.fftSize = 32;
+          inputPoint.connect(analyserNode);
+
+          audioRecorder = new Recorder(inputPoint);
+
+          audioRecorder.record();
+          var startedAt = new Number(new Date())
           setTimeout(() => {
-            recorder.stop();
-          }, 2000);
-        }, 2000);
+            sendAudioToSocket(audioRecorder, startedAt);
+          }, 2200);
+        }, 2000)
       }
 
       var startVideoStreaming = function() {
@@ -90,7 +112,7 @@
       }
 
       var startDistribution = function() {
-        if (!hasGetUserMedia() || typeof(MediaRecorder) === 'undefined') {
+        if (!hasGetUserMedia()) {
           alert("未対応ブラウザです。");
           return false;
         }
@@ -100,7 +122,7 @@
         navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
           navigator.mozGetUserMedia || navigator.msGetUserMedia;
 
-        navigator.getUserMedia({video: { frameRate: frameRate, width: 320, height: 240 }, audio: true}, function(stream) {
+        navigator.getUserMedia({video: true, audio: true}, function(stream) {
           videoStream = stream;
           startStreaming();
         }, function(e) {

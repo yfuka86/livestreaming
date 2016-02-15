@@ -13,6 +13,8 @@ app.get('/listener', (req, res) => {
   res.sendFile('listener.html', { root: path.join(__dirname, '../') })
 })
 
+app.use('/static', express.static('static'));
+
 const port = process.env.PORT || 3000
 
 const server = http.Server(app).listen(port, () => {

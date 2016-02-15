@@ -1,6 +1,7 @@
 <body>
   <img src="" width="640" height="480" class="video" ></img>
   <audio autoplay src="" class="audio"></audio>
+  <audio autoplay src="" class="audio2"></audio>
   <div class='message'></div>
   <div id="wrapper">
     <button id="start">start listening</button>
@@ -15,16 +16,42 @@
       // id of distribution!!!
       var id = 100
 
+      var frameRate = 12;
       var $video = $('.video');
       var $audio = $('.audio');
-      var socket = io();
+      var $audio2 = $('.audio2');
+      var socket = io('http://127.0.0.1:3000');
 
-      var latestDepict = null
-      var distributionCheckId = null
+      var videoQueue = [];
+      var videoIntervalId = null;
+
+      var latestDepict = null;
+      var latestAudioNode = null;
+      var distributionCheckId = null;
 
       var renderVideo = function(data) {
-        if (data.video) $video.attr('src', data.video);
-        if (data.audio) $audio.attr('src', data.audio);
+        // audio will always arrive later than video(image)
+        if (data.video) {
+          videoQueue.push(data);
+        }
+        if (data.audio) {
+          if (latestAudioNode = $audio2) {
+            $audio.attr('src', data.audio);
+            latestAudioNode = $audio;
+          } else {
+            $audio2.attr('src', data.audio);
+            latestAudioNode = $audio2;
+          }
+
+          if (videoIntervalId) clearInterval(videoIntervalId);
+          videoIntervalId = setInterval(function() {
+            var shifted = videoQueue.shift();
+            $video.attr('src', shifted.video);
+            if (shifted.ts > (data.ts + 2000)) {
+              clearInterval(intervalId);
+            }
+          }, 1000 / frameRate);
+        }
         latestDepict = new Date();
       }
 
